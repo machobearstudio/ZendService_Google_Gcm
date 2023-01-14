@@ -9,11 +9,15 @@
  *
  * @category   ZendService
  */
+
 namespace ZendServiceTest\Google\Gcm;
 
+use PHPUnit\Framework\Exception;
 use PHPUnit\Framework\TestCase;
-use ZendService\Google\Gcm\Message;
-use ZendService\Google\Gcm\Response;
+use TypeError;
+use ZendService\Google\Exception\InvalidArgumentException;
+use ZendService\Google\Fcm\Message;
+use ZendService\Google\Fcm\Response;
 
 /**
  * @category   ZendService
@@ -26,9 +30,9 @@ class ResponseTest extends TestCase
     /**
      * @var Message
      */
-    private $m;
+    protected Message $m;
 
-    public function setUp()
+    public function setUp(): void
     {
         $this->m = new Message();
     }
@@ -65,18 +69,8 @@ class ResponseTest extends TestCase
             self::markTestSkipped('PHP 7 required.');
         }
 
-        $this->expectException(\TypeError::class);
-        new Response('{bad');
-    }
-
-    public function testInvalidConstructorThrowsExceptionOnPhp7()
-    {
-        if (PHP_VERSION_ID >= 70000) {
-            self::markTestSkipped('PHP >=5.5 required.');
-        }
-
-        $this->expectException(\PHPUnit_Framework_Error::class);
-        new Response('{bad');
+        $this->expectException(InvalidArgumentException::class);
+        new Response(['{bad']);
     }
 
     public function testMessageExpectedBehavior()

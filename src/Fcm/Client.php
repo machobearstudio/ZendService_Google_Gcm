@@ -9,16 +9,19 @@
  *
  * @category  ZendService
  */
-namespace ZendService\Google\Gcm;
 
+namespace ZendService\Google\Fcm;
+
+use InvalidArgumentException;
+use Laminas\Http\Client as HttpClient;
+use Laminas\Json\Json;
 use ZendService\Google\Exception;
-use Zend\Http\Client as HttpClient;
-use Zend\Json\Json;
+use ZendService\Google\Exception\RuntimeException;
 
 /**
- * Google Cloud Messaging Client
+ * Firebase Cloud Messaging Client
  * This class allows the ability to send out messages
- * through the Google Cloud Messaging API.
+ * through the Firebase Cloud Messaging API.
  *
  * @category   ZendService
  */
@@ -30,21 +33,21 @@ class Client
     const SERVER_URI = 'https://fcm.googleapis.com/fcm/send';
 
     /**
-     * @var \Zend\Http\Client
+     * @var ?HttpClient
      */
-    protected $httpClient;
+    protected ?HttpClient $httpClient = null;
 
     /**
      * @var string
      */
-    protected $apiKey;
+    protected string $apiKey;
 
     /**
      * Get API Key.
      *
      * @return string
      */
-    public function getApiKey()
+    public function getApiKey(): string
     {
         return $this->apiKey;
     }
@@ -56,11 +59,11 @@ class Client
      *
      * @return Client
      *
-     * @throws Exception\InvalidArgumentException
+     * @noinspection PhpUnused
      */
-    public function setApiKey($apiKey)
+    public function setApiKey(string $apiKey): Client
     {
-        if (! is_string($apiKey) || empty($apiKey)) {
+        if (empty($apiKey)) {
             throw new Exception\InvalidArgumentException('The api key must be a string and not empty');
         }
         $this->apiKey = $apiKey;
@@ -71,13 +74,13 @@ class Client
     /**
      * Get HTTP Client.
      *
-     * @throws \Zend\Http\Client\Exception\InvalidArgumentException
+     * @return HttpClient
+     * @throws InvalidArgumentException
      *
-     * @return \Zend\Http\Client
      */
-    public function getHttpClient()
+    public function getHttpClient(): HttpClient
     {
-        if (! $this->httpClient) {
+        if (!$this->httpClient) {
             $this->httpClient = new HttpClient();
             $this->httpClient->setOptions(['strictredirects' => true]);
         }
@@ -88,11 +91,12 @@ class Client
     /**
      * Set HTTP Client.
      *
-     * @param \Zend\Http\Client
+     * @param HttpClient $http
      *
      * @return Client
+     * @noinspection PhpUnused
      */
-    public function setHttpClient(HttpClient $http)
+    public function setHttpClient(HttpClient $http): Client
     {
         $this->httpClient = $http;
 
@@ -104,17 +108,14 @@ class Client
      *
      * @param Message $message
      *
-     * @throws \Zend\Json\Exception\RuntimeException
-     * @throws \ZendService\Google\Exception\RuntimeException
-     * @throws \Zend\Http\Exception\RuntimeException
-     * @throws \Zend\Http\Client\Exception\RuntimeException
-     * @throws \Zend\Http\Exception\InvalidArgumentException
-     * @throws \Zend\Http\Client\Exception\InvalidArgumentException
-     * @throws \ZendService\Google\Exception\InvalidArgumentException
-     *
      * @return Response
+     * @throws RuntimeException
+     * @throws InvalidArgumentException
+     * @throws Exception\InvalidArgumentException
+     *
+     * @throws RuntimeException
      */
-    public function send(Message $message)
+    public function send(Message $message): Response
     {
         $client = $this->getHttpClient();
         $client->setUri(self::SERVER_URI);
@@ -123,32 +124,28 @@ class Client
         $headers->addHeaderLine('Content-length', mb_strlen($message->toJson()));
 
         $response = $client->setHeaders($headers)
-                           ->setMethod('POST')
-                           ->setRawBody($message->toJson())
-                           ->setEncType('application/json')
-                           ->send();
+            ->setMethod('POST')
+            ->setRawBody($message->toJson())
+            ->setEncType('application/json')
+            ->send();
 
         switch ($response->getStatusCode()) {
             case 500:
-                throw new Exception\RuntimeException('500 Internal Server Error');
-                break;
+                throw new RuntimeException('500 Internal Server Error');
             case 503:
                 $exceptionMessage = '503 Server Unavailable';
                 if ($retry = $response->getHeaders()->get('Retry-After')) {
-                    $exceptionMessage .= '; Retry After: '.$retry;
+                    $exceptionMessage .= '; Retry After: ' . $retry;
                 }
-                throw new Exception\RuntimeException($exceptionMessage);
-                break;
+                throw new RuntimeException($exceptionMessage);
             case 401:
-                throw new Exception\RuntimeException('401 Forbidden; Authentication Error');
-                break;
+                throw new RuntimeException('401 Forbidden; Authentication Error');
             case 400:
-                throw new Exception\RuntimeException('400 Bad Request; invalid message');
-                break;
+                throw new RuntimeException('400 Bad Request; invalid message');
         }
 
-        if (! $response = Json::decode($response->getBody(), Json::TYPE_ARRAY)) {
-            throw new Exception\RuntimeException('Response body did not contain a valid JSON response');
+        if (!$response = Json::decode($response->getBody(), Json::TYPE_ARRAY)) {
+            throw new RuntimeException('Response body did not contain a valid JSON response');
         }
 
         return new Response($response, $message);

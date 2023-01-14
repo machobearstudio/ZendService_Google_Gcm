@@ -1,4 +1,5 @@
-<?php
+<?php /** @noinspection ALL */
+
 /**
  * Zend Framework (http://framework.zend.com/).
  *
@@ -9,9 +10,10 @@
  *
  * @category   ZendService
  */
-namespace ZendService\Google\Gcm;
 
-use ZendService\Google\Exception;
+namespace ZendService\Google\Fcm;
+
+use ZendService\Google\Exception\InvalidArgumentException;
 
 /**
  * Google Cloud Messaging Response
@@ -42,16 +44,16 @@ class Response
      * @link https://developers.google.com/cloud-messaging/http-server-ref#error-codes
      * @var string
      */
-    const ERROR_MISSING_REGISTRATION         = 'MissingRegistration';
-    const ERROR_INVALID_REGISTRATION         = 'InvalidRegistration';
-    const ERROR_NOT_REGISTERED               = 'NotRegistered';
-    const ERROR_INVALID_PACKAGE_NAME         = 'InvalidPackageName';
-    const ERROR_MISMATCH_SENDER_ID           = 'MismatchSenderId';
-    const ERROR_MESSAGE_TOO_BIG              = 'MessageTooBig';
-    const ERROR_INVALID_DATA_KEY             = 'InvalidDataKey';
-    const ERROR_INVALID_TTL                  = 'InvalidTtl';
-    const ERROR_UNAVAILABLE                  = 'Unavailable';
-    const ERROR_INTERNAL_SERVER_ERROR        = 'InternalServerError';
+    const ERROR_MISSING_REGISTRATION = 'MissingRegistration';
+    const ERROR_INVALID_REGISTRATION = 'InvalidRegistration';
+    const ERROR_NOT_REGISTERED = 'NotRegistered';
+    const ERROR_INVALID_PACKAGE_NAME = 'InvalidPackageName';
+    const ERROR_MISMATCH_SENDER_ID = 'MismatchSenderId';
+    const ERROR_MESSAGE_TOO_BIG = 'MessageTooBig';
+    const ERROR_INVALID_DATA_KEY = 'InvalidDataKey';
+    const ERROR_INVALID_TTL = 'InvalidTtl';
+    const ERROR_UNAVAILABLE = 'Unavailable';
+    const ERROR_INTERNAL_SERVER_ERROR = 'InternalServerError';
     const ERROR_DEVICE_MESSAGE_RATE_EXCEEDED = 'DeviceMessageRateExceeded';
     const ERROR_TOPICS_MESSAGE_RATE_EXCEEDED = 'TopicsMessageRateExceeded';
 
@@ -76,9 +78,9 @@ class Response
     protected $cntCanonical;
 
     /**
-     * @var Message
+     * @var ?Message
      */
-    protected $message;
+    protected $message = null;
 
     /**
      * @var array
@@ -86,21 +88,18 @@ class Response
     protected $results;
 
     /**
-     * @var array
+     * @var ?array
      */
-    protected $response;
+    protected $response = null;
 
     /**
      * Constructor.
      *
-     * @param string  $response
-     * @param Message $message
+     * @param array|null $response
+     * @param ?Message $message
      *
-     * @return Response
-     *
-     * @throws \ZendService\Google\Exception\InvalidArgumentException
      */
-    public function __construct($response = null, Message $message = null)
+    public function __construct(?array $response = null, Message $message = null)
     {
         if ($response) {
             $this->setResponse($response);
@@ -109,14 +108,16 @@ class Response
         if ($message) {
             $this->setMessage($message);
         }
+
+        return $this;
     }
 
     /**
      * Get Message.
      *
-     * @return Message
+     * @return ?Message
      */
-    public function getMessage()
+    public function getMessage(): ?Message
     {
         return $this->message;
     }
@@ -128,7 +129,7 @@ class Response
      *
      * @return Response
      */
-    public function setMessage(Message $message)
+    public function setMessage(Message $message): Response
     {
         $this->message = $message;
 
@@ -140,7 +141,7 @@ class Response
      *
      * @return array
      */
-    public function getResponse()
+    public function getResponse(): ?array
     {
         return $this->response;
     }
@@ -152,26 +153,26 @@ class Response
      *
      * @return Response
      *
-     * @throws Exception\InvalidArgumentException
+     * @throws InvalidArgumentException
      */
-    public function setResponse(array $response)
+    public function setResponse(array $response): Response
     {
-        if (! isset(
+        if (!isset(
             $response['results'],
             $response['success'],
             $response['failure'],
             $response['canonical_ids'],
             $response['multicast_id']
         )) {
-            throw new Exception\InvalidArgumentException('Response did not contain the proper fields');
+            throw new InvalidArgumentException('Response did not contain the proper fields');
         }
 
         $this->response = $response;
         $this->results = $response['results'];
-        $this->cntSuccess = (int) $response['success'];
-        $this->cntFailure = (int) $response['failure'];
-        $this->cntCanonical = (int) $response['canonical_ids'];
-        $this->id = (int) $response['multicast_id'];
+        $this->cntSuccess = (int)$response['success'];
+        $this->cntFailure = (int)$response['failure'];
+        $this->cntCanonical = (int)$response['canonical_ids'];
+        $this->id = (int)$response['multicast_id'];
 
         return $this;
     }
@@ -181,7 +182,7 @@ class Response
      *
      * @return int
      */
-    public function getSuccessCount()
+    public function getSuccessCount(): int
     {
         return $this->cntSuccess;
     }
@@ -191,7 +192,7 @@ class Response
      *
      * @return int
      */
-    public function getFailureCount()
+    public function getFailureCount(): int
     {
         return $this->cntFailure;
     }
@@ -201,7 +202,7 @@ class Response
      *
      * @return int
      */
-    public function getCanonicalCount()
+    public function getCanonicalCount(): int
     {
         return $this->cntCanonical;
     }
@@ -217,7 +218,7 @@ class Response
      *               'registration_id' => 'id'
      *               ]
      */
-    public function getResults()
+    public function getResults(): array
     {
         return $this->correlate();
     }
@@ -225,12 +226,12 @@ class Response
     /**
      * Get Singular Result.
      *
-     * @param int $flag one of the RESULT_* flags
+     * @param string $flag one of the RESULT_* flags
      *
      * @return array singular array with keys being registration id
      *               value is the type of result
      */
-    public function getResult($flag)
+    public function getResult(string $flag): array
     {
         $ret = [];
         foreach ($this->correlate() as $k => $v) {
@@ -247,7 +248,7 @@ class Response
      *
      * @return array
      */
-    protected function correlate()
+    protected function correlate(): array
     {
         $results = $this->results;
         if ($this->message && $results) {

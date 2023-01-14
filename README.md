@@ -10,13 +10,14 @@ Provides support for Google push notifications.
 ## Requirements
 
 * PHP >= 5.6
+* added support for PHP 8.1
 
 ## Getting Started
 
 Install this library using [Composer](http://getcomposer.org/):
 
 ```bash
-$ composer require zendframework/zendservice-google-gcm
+$ composer require ohdonpiano/zendservice-google-gcm
 ```
 
 ## Documentation

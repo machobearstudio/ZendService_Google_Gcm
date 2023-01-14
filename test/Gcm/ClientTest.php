@@ -11,11 +11,11 @@
  */
 namespace ZendServiceTest\Google\Gcm;
 
+use Laminas\Http\Client as HttpClient;
+use Laminas\Http\Client\Adapter\Test;
 use PHPUnit\Framework\TestCase;
-use Zend\Http\Client\Adapter\Test;
-use Zend\Http\Client as HttpClient;
-use ZendService\Google\Gcm\Client;
-use ZendService\Google\Gcm\Message;
+use ZendService\Google\Fcm\Client;
+use ZendService\Google\Fcm\Message;
 
 /**
  * @category   ZendService
@@ -28,23 +28,23 @@ class ClientTest extends TestCase
     /**
      * @var Test
      */
-    protected $httpAdapter;
+    protected Test $httpAdapter;
     /**
      * @var HttpClient
      */
-    protected $httpClient;
+    protected HttpClient $httpClient;
 
     /**
      * @var Client
      */
-    protected $gcmClient;
+    protected Client $fcmClient;
 
     /**
      * @var Message
      */
-    protected $message;
+    protected Message $message;
 
-    protected function createJSONResponse($id, $success, $failure, $ids, $results)
+    protected function createJSONResponse($id, $success, $failure, $ids, $results): bool|string
     {
         return json_encode([
             'multicast_id' => $id,
@@ -55,14 +55,14 @@ class ClientTest extends TestCase
         ]);
     }
 
-    public function setUp()
+    public function setUp(): void
     {
         $this->httpClient = new HttpClient();
         $this->httpAdapter = new Test();
         $this->httpClient->setAdapter($this->httpAdapter);
-        $this->gcmClient = new Client();
-        $this->gcmClient->setHttpClient($this->httpClient);
-        $this->gcmClient->setApiKey('testing');
+        $this->fcmClient = new Client();
+        $this->fcmClient->setHttpClient($this->httpClient);
+        $this->fcmClient->setApiKey('testing');
         $this->message = new Message();
         $this->message->addRegistrationId('testing');
         $this->message->addData('testKey', 'testValue');
@@ -70,15 +70,15 @@ class ClientTest extends TestCase
 
     public function testSetApiKeyThrowsExceptionOnNonString()
     {
-        $this->expectException('InvalidArgumentException');
-        $this->gcmClient->setApiKey([]);
+        $this->expectException('TypeError');
+        $this->fcmClient->setApiKey(null);
     }
 
     public function testSetApiKey()
     {
         $key = 'a-login-token';
-        $this->gcmClient->setApiKey($key);
-        self::assertEquals($key, $this->gcmClient->getApiKey());
+        $this->fcmClient->setApiKey($key);
+        self::assertEquals($key, $this->fcmClient->getApiKey());
     }
 
     public function testGetHttpClientReturnsDefault()
@@ -89,36 +89,36 @@ class ClientTest extends TestCase
     public function testSetHttpClient()
     {
         $client = new HttpClient();
-        $this->gcmClient->setHttpClient($client);
-        self::assertEquals($client, $this->gcmClient->getHttpClient());
+        $this->fcmClient->setHttpClient($client);
+        self::assertEquals($client, $this->fcmClient->getHttpClient());
     }
 
     public function testSendThrowsExceptionWhenServiceUnavailable()
     {
         $this->expectException('RuntimeException');
         $this->httpAdapter->setResponse('HTTP/1.1 503 Service Unavailable'."\r\n\r\n");
-        $this->gcmClient->send($this->message);
+        $this->fcmClient->send($this->message);
     }
 
     public function testSendThrowsExceptionWhenServerUnavailable()
     {
         $this->expectException('RuntimeException');
         $this->httpAdapter->setResponse('HTTP/1.1 500 Internal Server Error'."\r\n\r\n");
-        $this->gcmClient->send($this->message);
+        $this->fcmClient->send($this->message);
     }
 
     public function testSendThrowsExceptionWhenInvalidAuthToken()
     {
         $this->expectException('RuntimeException');
         $this->httpAdapter->setResponse('HTTP/1.1 401 Unauthorized'."\r\n\r\n");
-        $this->gcmClient->send($this->message);
+        $this->fcmClient->send($this->message);
     }
 
     public function testSendThrowsExceptionWhenInvalidPayload()
     {
         $this->expectException('RuntimeException');
         $this->httpAdapter->setResponse('HTTP/1.1 400 Bad Request'."\r\n\r\n");
-        $this->gcmClient->send($this->message);
+        $this->fcmClient->send($this->message);
     }
 
     public function testSendResultInvalidRegistrationId()
@@ -129,7 +129,7 @@ class ClientTest extends TestCase
             'Context-Type: text/html'."\r\n\r\n".
             $body
         );
-        $response = $this->gcmClient->send($this->message);
+        $response = $this->fcmClient->send($this->message);
         $result = $response->getResults();
         $result = array_shift($result);
         self::assertEquals('InvalidRegistration', $result['error']);
@@ -146,7 +146,7 @@ class ClientTest extends TestCase
             'Context-Type: text/html'."\r\n\r\n".
             $body
         );
-        $response = $this->gcmClient->send($this->message);
+        $response = $this->fcmClient->send($this->message);
         $result = $response->getResults();
         $result = array_shift($result);
         self::assertEquals('MismatchSenderId', $result['error']);
@@ -163,7 +163,7 @@ class ClientTest extends TestCase
             'Context-Type: text/html'."\r\n\r\n".
             $body
         );
-        $response = $this->gcmClient->send($this->message);
+        $response = $this->fcmClient->send($this->message);
         $result = $response->getResults();
         $result = array_shift($result);
         self::assertEquals('NotRegistered', $result['error']);
@@ -180,7 +180,7 @@ class ClientTest extends TestCase
             'Context-Type: text/html'."\r\n\r\n".
             $body
         );
-        $response = $this->gcmClient->send($this->message);
+        $response = $this->fcmClient->send($this->message);
         $result = $response->getResults();
         $result = array_shift($result);
         self::assertEquals('MessageTooBig', $result['error']);
@@ -197,7 +197,7 @@ class ClientTest extends TestCase
             'Context-Type: text/html'."\r\n\r\n".
             $body
         );
-        $response = $this->gcmClient->send($this->message);
+        $response = $this->fcmClient->send($this->message);
         $result = $response->getResults();
         $result = array_shift($result);
         self::assertEquals('1:2342', $result['message_id']);
@@ -214,7 +214,7 @@ class ClientTest extends TestCase
             'Context-Type: text/html'."\r\n\r\n".
             $body
         );
-        $response = $this->gcmClient->send($this->message);
+        $response = $this->fcmClient->send($this->message);
         $result = $response->getResults();
         $result = array_shift($result);
         self::assertEquals('1:2342', $result['message_id']);

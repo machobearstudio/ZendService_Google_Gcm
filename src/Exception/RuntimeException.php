@@ -9,6 +9,7 @@
  *
  * @category  ZendService
  */
+
 namespace ZendService\Google\Exception;
 
 /**

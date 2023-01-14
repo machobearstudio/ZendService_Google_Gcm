@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file, in reverse 
 
 ## 2.1.2 - TBD
 
+### Changed
+
+- source and test code for PHP 8.1 support
+
+## 2.1.2 - TBD
+
 ### Added
 
 - Nothing.

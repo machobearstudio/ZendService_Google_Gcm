@@ -9,10 +9,12 @@
  *
  * @category  ZendService
  */
-namespace ZendService\Google\Gcm;
 
+namespace ZendService\Google\Fcm;
+
+use Laminas\Json\Json;
 use ZendService\Google\Exception;
-use Zend\Json\Json;
+use ZendService\Google\Exception\InvalidArgumentException;
 
 /**
  * Google Cloud Messaging Message
@@ -26,58 +28,58 @@ class Message
     /**
      * @var array
      */
-    protected $registrationIds = [];
+    protected array $registrationIds = [];
+
+    /**
+     * @var ?string
+     */
+    protected ?string $collapseKey = null;
 
     /**
      * @var string
      */
-    protected $collapseKey;
-
-    /**
-     * @var string
-     */
-    protected $priority = 'normal';
+    protected string $priority = 'normal';
 
     /**
      * @var array
      */
-    protected $data = [];
+    protected array $data = [];
 
     /**
      * @var array
      */
-    protected $notification = [];
+    protected array $notification = [];
 
     /**
      * @var bool
      */
-    protected $delayWhileIdle = false;
+    protected bool $delayWhileIdle = false;
 
     /**
      * @var int
      */
-    protected $timeToLive = 2419200;
+    protected int $timeToLive = 2419200;
 
     /**
-     * @var string
+     * @var ?string
      */
-    protected $restrictedPackageName;
+    protected ?string $restrictedPackageName = null;
 
     /**
      * @var bool
      */
-    protected $dryRun = false;
+    protected bool $dryRun = false;
 
     /**
      * Set Registration Ids.
      *
      * @param array $ids
      *
-     * @throws \ZendService\Google\Exception\InvalidArgumentException
-     *
      * @return Message
+     * @throws InvalidArgumentException
+     *
      */
-    public function setRegistrationIds(array $ids)
+    public function setRegistrationIds(array $ids): Message
     {
         $this->clearRegistrationIds();
         foreach ($ids as $id) {
@@ -92,7 +94,7 @@ class Message
      *
      * @return array
      */
-    public function getRegistrationIds()
+    public function getRegistrationIds(): array
     {
         return $this->registrationIds;
     }
@@ -104,14 +106,14 @@ class Message
      *
      * @return Message
      *
-     * @throws Exception\InvalidArgumentException
+     * @throws InvalidArgumentException
      */
-    public function addRegistrationId($id)
+    public function addRegistrationId(string $id): Message
     {
-        if (! is_string($id) || empty($id)) {
-            throw new Exception\InvalidArgumentException('$id must be a non-empty string');
+        if (empty($id)) {
+            throw new InvalidArgumentException('$id must be a non-empty string');
         }
-        if (! in_array($id, $this->registrationIds)) {
+        if (!in_array($id, $this->registrationIds)) {
             $this->registrationIds[] = $id;
         }
 
@@ -123,7 +125,7 @@ class Message
      *
      * @return Message
      */
-    public function clearRegistrationIds()
+    public function clearRegistrationIds(): Message
     {
         $this->registrationIds = [];
 
@@ -133,9 +135,9 @@ class Message
     /**
      * Get Collapse Key.
      *
-     * @return string
+     * @return string|null
      */
-    public function getCollapseKey()
+    public function getCollapseKey(): ?string
     {
         return $this->collapseKey;
     }
@@ -143,16 +145,16 @@ class Message
     /**
      * Set Collapse Key.
      *
-     * @param string $key
+     * @param ?string $key
      *
      * @return Message
      *
-     * @throws Exception\InvalidArgumentException
+     * @throws InvalidArgumentException
      */
-    public function setCollapseKey($key)
+    public function setCollapseKey(?string $key): Message
     {
-        if (null !== $key && ! (is_string($key) && strlen($key) > 0)) {
-            throw new Exception\InvalidArgumentException('$key must be null or a non-empty string');
+        if (null !== $key && !(strlen($key) > 0)) {
+            throw new InvalidArgumentException('$key must be null or a non-empty string');
         }
         $this->collapseKey = $key;
 
@@ -163,8 +165,9 @@ class Message
      * Get priority
      *
      * @return string
+     * @noinspection PhpUnused
      */
-    public function getPriority()
+    public function getPriority(): string
     {
         return $this->priority;
     }
@@ -172,14 +175,15 @@ class Message
     /**
      * Set priority
      *
-     * @param string $priority
+     * @param ?string $priority
      * @return Message
-     * @throws Exception\InvalidArgumentException
+     * @throws InvalidArgumentException
+     * @noinspection PhpUnused
      */
-    public function setPriority($priority)
+    public function setPriority(?string $priority): static
     {
-        if (! is_null($priority) && ! (is_string($priority) && strlen($priority) > 0)) {
-            throw new Exception\InvalidArgumentException('$priority must be null or a non-empty string');
+        if (!is_null($priority) && !(strlen($priority) > 0)) {
+            throw new InvalidArgumentException('$priority must be null or a non-empty string');
         }
         $this->priority = $priority;
         return $this;
@@ -190,11 +194,11 @@ class Message
      *
      * @param array $data
      *
-     * @throws \ZendService\Google\Exception\InvalidArgumentException
-     *
      * @return Message
+     * @throws InvalidArgumentException
+     *
      */
-    public function setData(array $data)
+    public function setData(array $data): static
     {
         $this->clearData();
         foreach ($data as $k => $v) {
@@ -209,7 +213,7 @@ class Message
      *
      * @return array
      */
-    public function getData()
+    public function getData(): array
     {
         return $this->data;
     }
@@ -218,17 +222,17 @@ class Message
      * Add Data.
      *
      * @param string $key
-     * @param mixed  $value
-     *
-     * @throws Exception\RuntimeException
-     * @throws Exception\InvalidArgumentException
+     * @param mixed $value
      *
      * @return Message
+     * @throws InvalidArgumentException
+     *
+     * @throws Exception\RuntimeException
      */
-    public function addData($key, $value)
+    public function addData(string $key, mixed $value): static
     {
-        if (! is_string($key) || empty($key)) {
-            throw new Exception\InvalidArgumentException('$key must be a non-empty string');
+        if (empty($key)) {
+            throw new InvalidArgumentException('$key must be a non-empty string');
         }
         if (array_key_exists($key, $this->data)) {
             throw new Exception\RuntimeException('$key conflicts with current set data');
@@ -243,7 +247,7 @@ class Message
      *
      * @return Message
      */
-    public function clearData()
+    public function clearData(): Message
     {
         $this->data = [];
 
@@ -256,7 +260,7 @@ class Message
      * @param array $data
      * @return Message
      */
-    public function setNotification(array $data)
+    public function setNotification(array $data): Message
     {
         $this->clearNotification();
         foreach ($data as $k => $v) {
@@ -270,7 +274,7 @@ class Message
      *
      * @return array
      */
-    public function getNotification()
+    public function getNotification(): array
     {
         return $this->notification;
     }
@@ -281,13 +285,13 @@ class Message
      * @param string $key
      * @param mixed $value
      * @return Message
-     * @throws Exception\InvalidArgumentException
+     * @throws InvalidArgumentException
      * @throws Exception\RuntimeException
      */
-    public function addNotification($key, $value)
+    public function addNotification(string $key, mixed $value): Message
     {
-        if (! is_string($key) || empty($key)) {
-            throw new Exception\InvalidArgumentException('$key must be a non-empty string');
+        if (empty($key)) {
+            throw new InvalidArgumentException('$key must be a non-empty string');
         }
         if (array_key_exists($key, $this->notification)) {
             throw new Exception\RuntimeException('$key conflicts with current set data');
@@ -301,7 +305,7 @@ class Message
      *
      * @return Message
      */
-    public function clearNotification()
+    public function clearNotification(): Message
     {
         $this->notification = [];
 
@@ -315,9 +319,9 @@ class Message
      *
      * @return Message
      */
-    public function setDelayWhileIdle($delay)
+    public function setDelayWhileIdle(bool $delay): Message
     {
-        $this->delayWhileIdle = (bool) $delay;
+        $this->delayWhileIdle = $delay;
 
         return $this;
     }
@@ -327,7 +331,7 @@ class Message
      *
      * @return bool
      */
-    public function getDelayWhileIdle()
+    public function getDelayWhileIdle(): bool
     {
         return $this->delayWhileIdle;
     }
@@ -339,9 +343,9 @@ class Message
      *
      * @return Message
      */
-    public function setTimeToLive($ttl)
+    public function setTimeToLive(int $ttl): Message
     {
-        $this->timeToLive = (int) $ttl;
+        $this->timeToLive = $ttl;
 
         return $this;
     }
@@ -351,7 +355,7 @@ class Message
      *
      * @return int
      */
-    public function getTimeToLive()
+    public function getTimeToLive(): int
     {
         return $this->timeToLive;
     }
@@ -359,16 +363,16 @@ class Message
     /**
      * Set Restricted Package Name.
      *
-     * @param string $name
+     * @param ?string $name
      *
      * @return Message
      *
-     * @throws Exception\InvalidArgumentException
+     * @throws InvalidArgumentException
      */
-    public function setRestrictedPackageName($name)
+    public function setRestrictedPackageName(?string $name): Message
     {
-        if (null !== $name && ! (is_string($name) && strlen($name) > 0)) {
-            throw new Exception\InvalidArgumentException('$name must be null OR a non-empty string');
+        if (null !== $name && !(strlen($name) > 0)) {
+            throw new InvalidArgumentException('$name must be null OR a non-empty string');
         }
         $this->restrictedPackageName = $name;
 
@@ -378,9 +382,9 @@ class Message
     /**
      * Get Restricted Package Name.
      *
-     * @return string
+     * @return string|null
      */
-    public function getRestrictedPackageName()
+    public function getRestrictedPackageName(): ?string
     {
         return $this->restrictedPackageName;
     }
@@ -392,9 +396,9 @@ class Message
      *
      * @return Message
      */
-    public function setDryRun($dryRun)
+    public function setDryRun(bool $dryRun): Message
     {
-        $this->dryRun = (bool) $dryRun;
+        $this->dryRun = $dryRun;
 
         return $this;
     }
@@ -404,7 +408,7 @@ class Message
      *
      * @return bool
      */
-    public function getDryRun()
+    public function getDryRun(): bool
     {
         return $this->dryRun;
     }
@@ -416,7 +420,7 @@ class Message
      *
      * @return string
      */
-    public function toJson()
+    public function toJson(): string
     {
         $json = [];
         if ($this->registrationIds) {
