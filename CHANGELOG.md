@@ -7,6 +7,10 @@ All notable changes to this project will be documented in this file, in reverse 
 ### Changed
 
 - source and test code for PHP 8.1 support
+- gcm package renamed fcm
+- import changed:
+     - use ZendService\Google\Fcm\Client;
+     - use ZendService\Google\Fcm\Message;
 
 ## 2.1.2 - TBD
 
