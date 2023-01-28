@@ -1,5 +1,5 @@
 {
-  "name": "zendframework/zendservice-google-gcm",
+  "name": "machobearstudio/zendservice-google-gcm",
   "description": "OOP wrapper for Google Cloud Messaging",
   "license": "BSD-3-Clause",
   "keywords": [
